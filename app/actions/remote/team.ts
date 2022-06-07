@@ -11,11 +11,12 @@ import NetworkManager from '@managers/network_manager';
 import {prepareCategories, prepareCategoryChannels} from '@queries/servers/categories';
 import {prepareMyChannelsForTeam, getDefaultChannelForTeam} from '@queries/servers/channel';
 import {prepareCommonSystemValues, getCurrentTeamId} from '@queries/servers/system';
-import {addTeamToTeamHistory, prepareDeleteTeam, prepareMyTeams, getNthLastChannelFromTeam, queryTeamsById, syncTeamTable} from '@queries/servers/team';
+import {addTeamToTeamHistory, prepareDeleteTeam, prepareMyTeams, getNthLastChannelFromTeam, queryTeamsById, syncTeamTable, getTeamById} from '@queries/servers/team';
 import EphemeralStore from '@store/ephemeral_store';
 import {isTablet} from '@utils/helpers';
 
 import {fetchMyChannelsForTeam, switchToChannelById} from './channel';
+import {fetchGroupsForTeam} from './groups';
 import {fetchPostsForChannel, fetchPostsForUnreadChannels} from './post';
 import {fetchRolesIfNeeded} from './role';
 import {forceLogoutIfNecessary} from './session';
@@ -286,6 +287,19 @@ export async function handleTeamChange(serverUrl: string, teamId: string) {
     const history = await addTeamToTeamHistory(operator, teamId, true);
     if (history.length) {
         models.push(...history);
+    }
+
+    // If the team is constrained, fetch it's groups
+    const team = await getTeamById(operator.database, teamId);
+    if (team && team.isGroupConstrained) {
+        const {groups, groupTeams} = await fetchGroupsForTeam(serverUrl, teamId, true);
+        if (groups && groups.length) {
+            models.push(...groups);
+        }
+
+        if (groupTeams && groupTeams.length) {
+            models.push(...groupTeams);
+        }
     }
 
     if (models.length) {

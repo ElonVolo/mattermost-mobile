@@ -101,7 +101,7 @@ type RawValue =
   | FileInfo
   | Group
   | GroupChannel
-  | GroupTeam
+  | Pick<GroupTeam, 'group_id' | 'team_id'>
   | GroupMembership
   | IdValue
   | Metadata

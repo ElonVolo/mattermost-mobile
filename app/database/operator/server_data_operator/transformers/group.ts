@@ -8,9 +8,11 @@ import {OperationType} from '@typings/database/enums';
 
 import type {TransformerArgs} from '@typings/database/database';
 import type GroupModel from '@typings/database/models/servers/group';
+import type GroupTeamModel from '@typings/database/models/servers/group_team';
 
 const {
     GROUP,
+    GROUP_TEAM,
 } = MM_TABLES.SERVER;
 
 /**
@@ -41,4 +43,30 @@ export const transformGroupRecord = ({action, database, value}: TransformerArgs)
         value,
         fieldsMapper,
     }) as Promise<GroupModel>;
+};
+
+/**
+  * transformGroupTeamRecord: Prepares a record of the SERVER database 'GroupTeam' table for update or create actions.
+  * @param {TransformerArgs} operator
+  * @param {Database} operator.database
+  * @param {RecordPair} operator.value
+  * @returns {Promise<GroupTeamModel>}
+  */
+export const transformGroupTeamRecord = ({action, database, value}: TransformerArgs): Promise<GroupTeamModel> => {
+    const raw = value.raw as Pick<GroupTeam, 'group_id' | 'team_id'>;
+
+    // id of group comes from server response
+    const fieldsMapper = (model: GroupTeamModel) => {
+        model._raw.id = `${raw.group_id}_${raw.team_id}`;
+        model.groupId = raw.group_id;
+        model.teamId = raw.team_id;
+    };
+
+    return prepareBaseRecord({
+        action,
+        database,
+        tableName: GROUP_TEAM,
+        value,
+        fieldsMapper,
+    }) as Promise<GroupTeamModel>;
 };

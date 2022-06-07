@@ -3,7 +3,7 @@
 
 import {fetchFilteredChannelGroups, fetchFilteredTeamGroups, fetchGroupsForAutocomplete} from '@actions/remote/groups';
 import DatabaseManager from '@database/manager';
-import {prepareGroups, queryGroupsByName, queryGroupsByNameInChannel, queryGroupsByNameInTeam} from '@queries/servers/group';
+import {prepareGroups, prepareGroupTeamsForTeam, queryGroupsByName, queryGroupsByNameInChannel, queryGroupsByNameInTeam} from '@queries/servers/group';
 
 import type GroupModel from '@typings/database/models/servers/group';
 
@@ -88,6 +88,32 @@ export const storeGroups = async (serverUrl: string, groups: Group[]) => {
         }
 
         return preparedGroups;
+    } catch (e) {
+        return {error: e};
+    }
+};
+
+/**
+ * Store fetched groupTeams locally
+ *
+ * @param serverUrl string - The Server URL
+ * @param groupTeams GroupTeam[] - The group teams fetched from the API
+ * @param prepareRecordsOnly boolean - Wether to only prepare records without saving
+ */
+export const storeGroupTeamsForTeam = async (serverUrl: string, groups: Group[], teamId: string) => {
+    const operator = DatabaseManager.serverDatabases[serverUrl]?.operator;
+    if (!operator) {
+        throw new Error(`${serverUrl} operator not found`);
+    }
+
+    try {
+        const preparedGroupTeams = await prepareGroupTeamsForTeam(operator, groups, teamId);
+
+        if (preparedGroupTeams.length) {
+            operator.batchRecords(preparedGroupTeams);
+        }
+
+        return preparedGroupTeams;
     } catch (e) {
         return {error: e};
     }
