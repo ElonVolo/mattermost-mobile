@@ -2,7 +2,7 @@
 // See LICENSE.txt for license information.
 
 import {storeGroups} from '@actions/local/group';
-import {prepareGroups, prepareGroupTeamsForTeam} from '@app/queries/servers/group';
+import {prepareGroupChannelsForChannel, prepareGroups, prepareGroupTeamsForTeam} from '@app/queries/servers/group';
 import {Client} from '@client/rest';
 import DatabaseManager from '@database/manager';
 import NetworkManager from '@managers/network_manager';
@@ -36,16 +36,19 @@ export const fetchGroupsForChannel = async (serverUrl: string, channelId: string
         const client = NetworkManager.getClient(serverUrl);
         const response = await client.getAllGroupsAssociatedToChannel(channelId);
 
-        if (!fetchOnly) {
-            return await storeGroups(serverUrl, response.groups);
-        }
-
         const operator = DatabaseManager.serverDatabases[serverUrl]?.operator;
         if (!operator) {
             throw new Error(`${serverUrl} operator not found`);
         }
 
-        return await prepareGroups(operator, response.groups);
+        const preparedGroups = await prepareGroups(operator, response.groups);
+        const preparedGroupChannels = await prepareGroupChannelsForChannel(operator, response.groups, channelId);
+
+        if (!fetchOnly) {
+            await operator.batchRecords({...preparedGroups, ...preparedGroupChannels});
+        }
+
+        return {groups: preparedGroups, groupChannels: preparedGroupChannels};
     } catch (error) {
         forceLogoutIfNecessary(serverUrl, error as ClientErrorProps);
         return {error};

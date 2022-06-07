@@ -2,18 +2,20 @@
 // See LICENSE.txt for license information.
 
 import {MM_TABLES} from '@constants/database';
-import {transformGroupRecord, transformGroupTeamRecord} from '@database/operator/server_data_operator/transformers/group';
+import {transformGroupChannelRecord, transformGroupRecord, transformGroupTeamRecord} from '@database/operator/server_data_operator/transformers/group';
 import {getUniqueRawsBy} from '@database/operator/utils/general';
 
-import type {HandleGroupArgs, HandleGroupTeamArgs} from '@typings/database/database';
+import type {HandleGroupArgs, HandleGroupChannelArgs, HandleGroupTeamArgs} from '@typings/database/database';
 import type GroupModel from '@typings/database/models/servers/group';
+import type GroupChannelModel from '@typings/database/models/servers/group_channel';
 import type GroupTeamModel from '@typings/database/models/servers/group_team';
 
-const {GROUP, GROUP_TEAM} = MM_TABLES.SERVER;
+const {GROUP, GROUP_CHANNEL, GROUP_TEAM} = MM_TABLES.SERVER;
 
 export interface GroupHandlerMix {
     handleGroups: ({groups, prepareRecordsOnly}: HandleGroupArgs) => Promise<GroupModel[]>;
     handleGroupTeams: ({groupTeams, prepareRecordsOnly}: HandleGroupTeamArgs) => Promise<GroupTeamModel[]>;
+    handleGroupChannels: ({groupChannels, prepareRecordsOnly}: HandleGroupChannelArgs) => Promise<GroupChannelModel[]>;
 }
 
 const GroupHandler = (superclass: any) => class extends superclass implements GroupHandlerMix {
@@ -69,6 +71,34 @@ const GroupHandler = (superclass: any) => class extends superclass implements Gr
             transformer: transformGroupTeamRecord,
             createOrUpdateRawValues,
             tableName: GROUP_TEAM,
+            prepareRecordsOnly,
+        });
+    };
+
+    /**
+      * handleGroupChannels: Handler responsible for the Create/Update operations occurring on the GroupChannel table from the 'Server' schema
+      * @param {HandleGroupChannelArgs} groupChannelsArgs
+      * @param {GroupChannel[]} groupChannelsArgs.groupChannels
+      * @param {boolean} groupChannelsArgs.prepareRecordsOnly
+      * @throws DataOperatorException
+      * @returns {Promise<GroupChannelModel[]>}
+      */
+    handleGroupChannels = async ({groupChannels, prepareRecordsOnly = true}: HandleGroupChannelArgs): Promise<GroupChannelModel[]> => {
+        if (!groupChannels?.length) {
+            // eslint-disable-next-line no-console
+            console.warn(
+                'An empty or undefined "groupChannels" array has been passed to the handleGroupChannels method',
+            );
+            return [];
+        }
+
+        const createOrUpdateRawValues = getUniqueRawsBy({raws: groupChannels, key: 'id'});
+
+        return this.handleRecords({
+            fieldName: 'id',
+            transformer: transformGroupChannelRecord,
+            createOrUpdateRawValues,
+            tableName: GROUP_CHANNEL,
             prepareRecordsOnly,
         });
     };

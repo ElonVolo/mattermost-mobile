@@ -100,7 +100,7 @@ type RawValue =
   | Draft
   | FileInfo
   | Group
-  | GroupChannel
+  | Pick<GroupChannel, 'group_id' | 'channel_id'>
   | Pick<GroupTeam, 'group_id' | 'team_id'>
   | GroupMembership
   | IdValue

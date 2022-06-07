@@ -4,6 +4,7 @@
 import {Model} from '@nozbe/watermelondb';
 import {DeviceEventEmitter} from 'react-native';
 
+import {fetchGroupsForChannel} from '@actions/remote/groups';
 import {General, Navigation as NavigationConstants, Preferences, Screens} from '@constants';
 import {SYSTEM_IDENTIFIERS} from '@constants/database';
 import DatabaseManager from '@database/manager';
@@ -82,6 +83,18 @@ export async function switchToChannel(serverUrl: string, channelId: string, team
                 const {member: viewedAt} = await markChannelAsViewed(serverUrl, channelId, true);
                 if (viewedAt) {
                     models.push(viewedAt);
+                }
+
+                // Get Groups for Channel if constrained
+                if (channel.isGroupConstrained) {
+                    const {groups, groupChannels} = await fetchGroupsForChannel(serverUrl, channelId, true);
+                    if (groups && groups.length) {
+                        models.push(...groups);
+                    }
+
+                    if (groupChannels && groupChannels.length) {
+                        models.push(...groupChannels);
+                    }
                 }
 
                 if (models.length && !prepareRecordsOnly) {

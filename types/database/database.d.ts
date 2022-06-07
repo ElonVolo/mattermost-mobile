@@ -226,6 +226,10 @@ export type HandleGroupTeamArgs = PrepareOnly & {
   groupTeams: Array<Pick<GroupTeam, 'group_id' | 'team_id'>>;
 }
 
+export type HandleGroupChannelArgs = PrepareOnly & {
+  groupChannels: Array<Pick<GroupChannel, 'group_id' | 'channel_id'>>;
+}
+
 export type HandleCategoryChannelArgs = PrepareOnly & {
   categoryChannels?: CategoryChannel[];
 };

@@ -34,6 +34,11 @@ export const prepareGroups = (operator: ServerDataOperator, groups: Group[]) => 
     return operator.handleGroups({groups, prepareRecordsOnly: true});
 };
 
+export const prepareGroupChannelsForChannel = (operator: ServerDataOperator, groups: Group[] | GroupModel[], channelId: string) => {
+    const groupChannels = groups.map((g) => ({channel_id: channelId, group_id: g.id}));
+    return operator.handleGroupChannels({groupChannels, prepareRecordsOnly: true});
+};
+
 export const prepareGroupTeamsForTeam = (operator: ServerDataOperator, groups: Group[] | GroupModel[], teamId: string) => {
     const groupTeams = groups.map((g) => ({team_id: teamId, group_id: g.id}));
     return operator.handleGroupTeams({groupTeams, prepareRecordsOnly: true});
