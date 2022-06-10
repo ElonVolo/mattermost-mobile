@@ -3,8 +3,9 @@
 
 import {withDatabase} from '@nozbe/watermelondb/DatabaseProvider';
 import withObservables from '@nozbe/with-observables';
+import {switchMap} from 'rxjs/operators';
 
-import {queryGroupsByName} from '@app/queries/servers/group';
+import {queryGroupMembershipForUser, queryGroupsByName} from '@app/queries/servers/group';
 import {observeCurrentUserId} from '@queries/servers/system';
 import {observeTeammateNameDisplay, queryUsersLike} from '@queries/servers/user';
 
@@ -26,6 +27,7 @@ const enhance = withObservables(['mentionName'], ({database, mentionName}: {ment
         teammateNameDisplay,
         users: queryUsersLike(database, mn).observeWithColumns(['username']),
         groups: queryGroupsByName(database, mn).observeWithColumns(['name']),
+        groupMemberships: currentUserId.pipe(switchMap((userId) => queryGroupMembershipForUser(database, userId).observe())),
     };
 });
 

@@ -102,7 +102,7 @@ type RawValue =
   | Group
   | GroupChannel
   | GroupTeam
-  | GroupMembership
+  | {group_id: string; user_id: string} // GroupMembership
   | IdValue
   | Metadata
   | MyTeam

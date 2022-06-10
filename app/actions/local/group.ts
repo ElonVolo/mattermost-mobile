@@ -2,10 +2,12 @@
 // See LICENSE.txt for license information.
 
 import {fetchFilteredChannelGroups, fetchFilteredTeamGroups, fetchGroupsForAutocomplete} from '@actions/remote/groups';
+import {getOperator} from '@app/helpers/database';
 import DatabaseManager from '@database/manager';
-import {prepareGroups, queryGroupsByName, queryGroupsByNameInChannel, queryGroupsByNameInTeam} from '@queries/servers/group';
+import {prepareGroupMembershipsForUser, prepareGroups, queryGroupsByName, queryGroupsByNameInChannel, queryGroupsByNameInTeam} from '@queries/servers/group';
 
 import type GroupModel from '@typings/database/models/servers/group';
+import type GroupMembershipModel from '@typings/database/models/servers/group_membership';
 
 export const searchGroupsByName = async (serverUrl: string, name: string): Promise<GroupModel[]> => {
     const operator = DatabaseManager.serverDatabases[serverUrl]?.operator;
@@ -92,3 +94,37 @@ export const storeGroups = async (serverUrl: string, groups: Group[]) => {
     }
 };
 
+/**
+  * Store fetched groupTeams locally
+  *
+  * @param serverUrl string - The Server URL
+  * @param groups Group[] - The groups fetched from the API
+  * @param userId string - The member to associate groups with
+  * @param prepareOnly boolean - Prepare only without saving
+  */
+export const storeGroupMembershipsForMember = async (serverUrl: string, groups: Group[], userId: string, prepareOnly = false) => {
+    try {
+        const operator = getOperator(serverUrl);
+        const preparedModels: Array<GroupModel | GroupMembershipModel> = [];
+        const preparedGroups = await prepareGroups(operator, groups);
+
+        if (preparedGroups.length) {
+            preparedModels.push(...preparedGroups);
+        }
+
+        const {existingGroupMemberships, groupMemberships} = await prepareGroupMembershipsForUser(operator, groups, userId);
+        if (groupMemberships.length) {
+            preparedModels.push(...existingGroupMemberships, ...groupMemberships);
+        }
+
+        if (preparedModels.length && !prepareOnly) {
+            operator.batchRecords(preparedModels);
+        }
+
+        return {groups: preparedGroups, groupMemberships};
+    } catch (e) {
+        // eslint-disable-next-line no-console
+        console.log('storeGroupMembershipsForMember', e);
+        return {error: e};
+    }
+};
